@@ -24,3 +24,30 @@ jobs:
       uses: actions/checkout@v3
     - name: Test All
       run: go test -race ./...
+  fuzz:
+    strategy:
+      matrix:
+        go-version: [1.18.x, 1.19.x]
+        platform: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Fuzz Test All
+      working-directory: .
+      run: |
+        files=$(grep -r --include='**_test.go' --files-with-matches 'func Fuzz' .)
+        for file in ${files}
+        do
+            funcs=$(grep -oP 'func \K(Fuzz\w*)' $file)
+            for func in ${funcs}
+            do
+                echo "Fuzzing $func in $file"
+                parentDir=$(dirname $file)
+                go test $parentDir -run=$func -fuzz=$func -fuzztime=5s
+            done
+        done
