@@ -31,6 +31,16 @@ func FuzzStringHasher(f *testing.F) {
 	})
 }
 
+func FuzzRuneHasher(f *testing.F) {
+	f.Add('a')
+	f.Add('z')
+	f.Add('A')
+	f.Add('Z')
+	f.Fuzz(func(t *testing.T, key rune) {
+		testHasher(t, key)
+	})
+}
+
 func FuzzIntHasher(f *testing.F) {
 	f.Add(int(0))
 	f.Add(int(math.MaxInt32))
@@ -128,13 +138,37 @@ func FuzzFloat64Hasher(f *testing.F) {
 	})
 }
 
-func FuzzRuneHasher(f *testing.F) {
-	f.Add('a')
-	f.Add('z')
-	f.Add('A')
-	f.Add('Z')
-	f.Fuzz(func(t *testing.T, key rune) {
-		testHasher(t, key)
+func FuzzArrayHasher(f *testing.F) {
+	f.Add(0, 0)
+	f.Add(1, -1)
+	f.Fuzz(func(t *testing.T, a, b int) {
+		testHasher(t, [2]int{a, b})
+	})
+}
+
+func FuzzStructHasher(f *testing.F) {
+	type obj struct {
+		i int
+		f float32
+		t time.Time
+	}
+	f.Add(int(0), float32(0), int64(0))
+	f.Add(int(-1), float32(-1), int64(-1))
+	f.Fuzz(func(t *testing.T, i int, f float32, m int64) {
+		o := obj{i: i, f: f, t: time.UnixMicro(m)}
+		testHasher(t, o)
+	})
+}
+
+func FuzzStringPairHasher(f *testing.F) {
+	type pair struct {
+		a, b string
+	}
+	f.Add("", "")
+	f.Add("a", "b")
+	f.Add("hello", "world")
+	f.Fuzz(func(t *testing.T, a, b string) {
+		testHasher(t, pair{a, b})
 	})
 }
 
@@ -144,17 +178,33 @@ func testHasher[K comparable](t *testing.T, key K) {
 	assert.NotEqual(t, h1, h2) // new seed
 }
 
-func TestKeysize(t *testing.T) {
-	assert.Equal(t, uint8(2), NewHasher[uint16]().keySize())
-	assert.Equal(t, uint8(4), NewHasher[uint32]().keySize())
-	assert.Equal(t, uint8(8), NewHasher[uint64]().keySize())
+func TestRefAllocs(t *testing.T) {
+	t.Run("*int", func(t *testing.T) {
+		x := int(42)
+		testNoAllocs(t, NewHasher[*int](), &x)
+	})
+	t.Run("*uint", func(t *testing.T) {
+		x := uint(42)
+		testNoAllocs(t, NewHasher[*uint](), &x)
+	})
+	t.Run("*float", func(t *testing.T) {
+		x := float64(math.E)
+		testNoAllocs(t, NewHasher[*float64](), &x)
+	})
+	t.Run("*string", func(t *testing.T) {
+		x := string("asdf")
+		testNoAllocs(t, NewHasher[*string](), &x)
+	})
 }
 
-func (h Hasher[K]) keySize() uint8 {
-	return runtimeKeySize(h.m)
+func testSomeAllocs[K comparable](t *testing.T, h Hasher[K], key K) {
+	a := testing.AllocsPerRun(64, func() {
+		h.Hash(key)
+	})
+	assert.True(t, a >= 1.0)
 }
 
-func TestNoAllocs(t *testing.T) {
+func TestNoValueAllocs(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		testNoAllocs(t, NewHasher[int](), 42)
 	})

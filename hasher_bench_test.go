@@ -54,6 +54,25 @@ func BenchmarkCompareStringHasher(b *testing.B) {
 	})
 }
 
+func BenchmarkStringPairHasher(b *testing.B) {
+	type pair struct {
+		a, b string
+	}
+	h := NewHasher[pair]()
+	const cnt uint64 = 4096
+	const mod uint64 = 4096 - 1
+	dataA := genStringData(cnt, 16)
+	dataB := genStringData(cnt, 16)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.Hash(pair{
+			a: dataA[uint64(i)&mod],
+			b: dataB[uint64(i)&mod],
+		})
+	}
+	b.ReportAllocs()
+}
+
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 func genStringData(cnt, ln uint64) (data []string) {

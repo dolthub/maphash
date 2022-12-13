@@ -26,14 +26,13 @@ package maphash
 
 import "unsafe"
 
-func runtimeHash(key unsafe.Pointer, m any) uintptr {
-	g := (*mapiface)(unsafe.Pointer(&m))
-	return g.typ.hasher(key, uintptr(g.val.hash0))
-}
+type hashfn func(unsafe.Pointer, uintptr) uintptr
 
-func runtimeKeySize(m interface{}) uint8 {
-	g := (*mapiface)(unsafe.Pointer(&m))
-	return g.typ.keysize
+func getRuntimeHasher[K comparable]() (h hashfn, seed uintptr) {
+	a := any(make(map[K]struct{}))
+	i := (*mapiface)(unsafe.Pointer(&a))
+	h, seed = i.typ.hasher, uintptr(i.val.hash0)
+	return
 }
 
 // noescape hides a pointer from escape analysis. It is the identity function
