@@ -18,9 +18,13 @@
 package maphash
 
 import (
+	"hash/fnv"
 	gohash "hash/maphash"
 	"math/rand"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/zeebo/xxh3"
 )
 
 func BenchmarkUint64Hasher(b *testing.B) {
@@ -33,23 +37,43 @@ func BenchmarkUint64Hasher(b *testing.B) {
 }
 
 func BenchmarkCompareStringHasher(b *testing.B) {
-	h := NewHasher[string]()
-	seed := gohash.MakeSeed()
 	const cnt uint64 = 4096
 	const mod uint64 = 4096 - 1
 	data := genStringData(cnt, 16)
 	b.ResetTimer()
 
-	b.Run("string hasher", func(b *testing.B) {
+	b.Run("dolthub/maphash", func(b *testing.B) {
+		h := NewHasher[string]()
+		var x uint64
 		for i := 0; i < b.N; i++ {
-			h.Hash(data[uint64(i)&mod])
+			x = h.Hash(data[uint64(i)&mod])
 		}
+		assert.NotNil(b, x)
 		b.ReportAllocs()
 	})
-	b.Run("std string hasher", func(b *testing.B) {
+	b.Run("hash/maphash", func(b *testing.B) {
+		seed := gohash.MakeSeed()
+		var x uint64
 		for i := 0; i < b.N; i++ {
-			gohash.String(seed, data[uint64(i)&mod])
+			x = gohash.String(seed, data[uint64(i)&mod])
 		}
+		assert.NotNil(b, x)
+		b.ReportAllocs()
+	})
+	b.Run("xxHash3", func(b *testing.B) {
+		var x uint64
+		for i := 0; i < b.N; i++ {
+			x = xxh3.HashStringSeed(data[uint64(i)&mod], 1)
+		}
+		assert.NotNil(b, x)
+		b.ReportAllocs()
+	})
+	b.Run("hash/fnv", func(b *testing.B) {
+		h := fnv.New64()
+		for i := 0; i < b.N; i++ {
+			_, _ = h.Write([]byte(data[uint64(i)&mod]))
+		}
+		assert.NotNil(b, h.Sum64())
 		b.ReportAllocs()
 	})
 }
