@@ -120,6 +120,7 @@ func FuzzUint64Hasher(f *testing.F) {
 		testHasher(t, key)
 	})
 }
+
 func FuzzFloat32Hasher(f *testing.F) {
 	f.Add(float32(0))
 	f.Add(float32(math.Pi))
@@ -173,9 +174,16 @@ func FuzzStringPairHasher(f *testing.F) {
 }
 
 func testHasher[K comparable](t *testing.T, key K) {
-	h1 := NewHasher[K]().Hash(key)
-	h2 := NewHasher[K]().Hash(key)
-	assert.NotEqual(t, h1, h2) // new seed
+	h1, h2 := NewHasher[K](), NewHasher[K]()
+	assert.Equal(t, h1.Hash(key), h1.Hash(key))
+	assert.Equal(t, h2.Hash(key), h2.Hash(key))
+	assert.NotEqual(t, h1.Hash(key), h2.Hash(key))
+	h3, h4 := NewSeed[K](h1), NewSeed[K](h2)
+	assert.Equal(t, h3.Hash(key), h3.Hash(key))
+	assert.Equal(t, h4.Hash(key), h4.Hash(key))
+	assert.NotEqual(t, h1.Hash(key), h3.Hash(key))
+	assert.NotEqual(t, h2.Hash(key), h4.Hash(key))
+	assert.NotEqual(t, h3.Hash(key), h4.Hash(key))
 }
 
 func TestRefAllocs(t *testing.T) {
@@ -195,13 +203,6 @@ func TestRefAllocs(t *testing.T) {
 		x := string("asdf")
 		testNoAllocs(t, NewHasher[*string](), &x)
 	})
-}
-
-func testSomeAllocs[K comparable](t *testing.T, h Hasher[K], key K) {
-	a := testing.AllocsPerRun(64, func() {
-		h.Hash(key)
-	})
-	assert.True(t, a >= 1.0)
 }
 
 func TestNoValueAllocs(t *testing.T) {
