@@ -24,15 +24,22 @@
 
 package maphash
 
-import "unsafe"
+import (
+	"math/rand"
+	"unsafe"
+)
 
 type hashfn func(unsafe.Pointer, uintptr) uintptr
 
-func getRuntimeHasher[K comparable]() (h hashfn, seed uintptr) {
+func getRuntimeHasher[K comparable]() (h hashfn) {
 	a := any(make(map[K]struct{}))
 	i := (*mapiface)(unsafe.Pointer(&a))
-	h, seed = i.typ.hasher, uintptr(i.val.hash0)
+	h = i.typ.hasher
 	return
+}
+
+func newHashSeed() uintptr {
+	return uintptr(rand.Int())
 }
 
 // noescape hides a pointer from escape analysis. It is the identity function

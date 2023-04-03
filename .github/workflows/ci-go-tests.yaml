@@ -27,7 +27,7 @@ jobs:
   fuzz:
     strategy:
       matrix:
-        go-version: [1.18.x, 1.19.x]
+        go-version: [1.18.x, 1.19.x, 1.20.x]
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:

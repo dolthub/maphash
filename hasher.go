@@ -25,8 +25,18 @@ type Hasher[K comparable] struct {
 
 // NewHasher creates a new Hasher[K] with a random seed.
 func NewHasher[K comparable]() Hasher[K] {
-	h, s := getRuntimeHasher[K]()
-	return Hasher[K]{hash: h, seed: s}
+	return Hasher[K]{
+		hash: getRuntimeHasher[K](),
+		seed: newHashSeed(),
+	}
+}
+
+// NewSeed returns a copy of |h| with a new hash seed.
+func NewSeed[K comparable](h Hasher[K]) Hasher[K] {
+	return Hasher[K]{
+		hash: h.hash,
+		seed: newHashSeed(),
+	}
 }
 
 // Hash hashes |key|.
