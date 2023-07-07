@@ -46,3 +46,11 @@ func (h Hasher[K]) Hash(key K) uint64 {
 	p := noescape(unsafe.Pointer(&key))
 	return uint64(h.hash(p, h.seed))
 }
+
+// Hash2 hashes |key| as more flexible uintptr.
+func (h Hasher[K]) Hash2(key K) uintptr {
+	// promise to the compiler that pointer
+	// |p| does not escape the stack.
+	p := noescape(unsafe.Pointer(&key))
+	return h.hash(p, h.seed)
+}
