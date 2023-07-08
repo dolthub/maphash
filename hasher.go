@@ -41,10 +41,7 @@ func NewSeed[K comparable](h Hasher[K]) Hasher[K] {
 
 // Hash hashes |key|.
 func (h Hasher[K]) Hash(key K) uint64 {
-	// promise to the compiler that pointer
-	// |p| does not escape the stack.
-	p := noescape(unsafe.Pointer(&key))
-	return uint64(h.hash(p, h.seed))
+	return uint64(h.Hash2(key))
 }
 
 // Hash2 hashes |key| as more flexible uintptr.
