@@ -178,12 +178,20 @@ func testHasher[K comparable](t *testing.T, key K) {
 	assert.Equal(t, h1.Hash(key), h1.Hash(key))
 	assert.Equal(t, h2.Hash(key), h2.Hash(key))
 	assert.NotEqual(t, h1.Hash(key), h2.Hash(key))
+	assert.Equal(t, h1.Hash2(key), h1.Hash2(key))
+	assert.Equal(t, h2.Hash2(key), h2.Hash2(key))
+	assert.NotEqual(t, h1.Hash2(key), h2.Hash2(key))
 	h3, h4 := NewSeed[K](h1), NewSeed[K](h2)
 	assert.Equal(t, h3.Hash(key), h3.Hash(key))
 	assert.Equal(t, h4.Hash(key), h4.Hash(key))
 	assert.NotEqual(t, h1.Hash(key), h3.Hash(key))
 	assert.NotEqual(t, h2.Hash(key), h4.Hash(key))
 	assert.NotEqual(t, h3.Hash(key), h4.Hash(key))
+	assert.Equal(t, h3.Hash2(key), h3.Hash2(key))
+	assert.Equal(t, h4.Hash2(key), h4.Hash2(key))
+	assert.NotEqual(t, h1.Hash2(key), h3.Hash2(key))
+	assert.NotEqual(t, h2.Hash2(key), h4.Hash2(key))
+	assert.NotEqual(t, h3.Hash2(key), h4.Hash2(key))
 }
 
 func TestRefAllocs(t *testing.T) {
